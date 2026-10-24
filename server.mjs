@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { localReply } from './local-engine.mjs';
 import { askGemini, GeminiError } from './gemini-client.mjs';
+import { selectGeminiTarget } from './gemini-target.mjs';
 import { envelope, logEvent, readEvents, validUuid, uuid } from './trace-ledger.mjs';
 
 const dir = dirname(fileURLToPath(import.meta.url));
@@ -64,12 +65,16 @@ const server = http.createServer(async (req,res) => {
       return send(res,403,{error:'Origem não autorizada.'});
     }
     if (req.method === 'GET' && url.pathname === '/api/status') {
-      let gemini='offline';
+      let gemini='offline', geminiProfile=null;
       try {
-        const r=await fetch('http://127.0.0.1:9334/json/list',{signal:AbortSignal.timeout(1500)});
-        if (r.ok && (await r.json()).some(t=>t.type==='page'&&t.url?.startsWith('https://gemini.google.com/'))) gemini='disponivel';
+        const r=await fetch((process.env.MCF_GEMINI_DEBUG_URL || 'http://127.0.0.1:9334') + '/json/list',{signal:AbortSignal.timeout(1500)});
+        if (r.ok) {
+          const selected=selectGeminiTarget(await r.json(),process.env.MCF_GEMINI_PROFILE || 'auto');
+          gemini='disponivel';
+          geminiProfile=selected.profile;
+        }
       } catch {}
-      return send(res,200,{ok:true,service:'mcf-parallel-chat',local:'disponivel',gemini});
+      return send(res,200,{ok:true,service:'mcf-parallel-chat',local:'disponivel',gemini,geminiProfile});
     }
     if (req.method === 'GET' && url.pathname === '/api/traces') {
       return send(res, 200, {ok:true,events:await readEvents(30)});

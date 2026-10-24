@@ -35,7 +35,8 @@ async function refreshStatus() {
     const response = await fetch('/api/status', {cache:'no-store'});
     const s = await response.json();
     updateStatus('#localStatus', 'Pronto');
-    updateStatus('#geminiStatus', s.gemini === 'disponivel' ? 'Conectado' : 'Indisponível',
+    const profileLabel = s.geminiProfile === 'default' ? 'padrão' : s.geminiProfile == null ? '' : 'conta ' + s.geminiProfile;
+    updateStatus('#geminiStatus', s.gemini === 'disponivel' ? 'Conectado · ' + profileLabel : 'Indisponível',
       s.gemini === 'disponivel' ? '' : 'error');
     $('#connectionText').textContent = s.gemini === 'disponivel' ? '2 fluxos disponíveis' : 'Gemini indisponível';
   } catch {

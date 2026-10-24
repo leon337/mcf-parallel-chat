@@ -1,5 +1,6 @@
 // Gemini browser adapter for MCF Parallel Chat.
 // Uses only the existing local Chromium debugging endpoint. No API keys.
+import { selectGeminiTarget } from './gemini-target.mjs';
 const DEBUG_BASE = process.env.MCF_GEMINI_DEBUG_URL || 'http://127.0.0.1:9334';
 export class GeminiError extends Error {
   constructor(message) {
@@ -19,12 +20,13 @@ async function connect() {
   } catch {
     throw new GeminiError('Gemini indisponível: depuração do Cockpit não acessível.');
   }
-  const matches = targets.filter(t => t.type === 'page'
-    && /^https:\/\/gemini\.google\.com\//.test(t.url));
-  if (matches.length !== 1 || !matches[0].webSocketDebuggerUrl) {
-    throw new GeminiError('É necessário exatamente um Gemini aberto no Cockpit.');
+  let selected;
+  try {
+    selected = selectGeminiTarget(targets, process.env.MCF_GEMINI_PROFILE || 'auto');
+  } catch (error) {
+    throw new GeminiError(error.message);
   }
-  const socket = new WebSocket(matches[0].webSocketDebuggerUrl);
+  const socket = new WebSocket(selected.target.webSocketDebuggerUrl);
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new GeminiError('Tempo esgotado ao conectar ao Gemini.')), 4500);
     socket.addEventListener('open', () => { clearTimeout(timer); resolve(); }, { once: true });
@@ -54,7 +56,19 @@ async function connect() {
     if (out.exceptionDetails) throw new GeminiError('Erro ao ler interface do Gemini.');
     return out.result?.value;
   };
-  return { call, evaluate, close: () => { try { socket.close(); } catch {} } };
+  // Auxiliary Electron BrowserWindows may be fully occluded or backgrounded.
+  // Bring the *selected* target forward before issuing any keyboard/mouse input.
+  // This is more reliable than guessing X11 window IDs or absolute coordinates.
+  try {
+    await call('Page.bringToFront');
+    if (await evaluate('document.visibilityState') !== 'visible') {
+      throw new GeminiError('A janela Gemini selecionada não está visível para interação.');
+    }
+  } catch (error) {
+    socket.close();
+    throw error instanceof GeminiError ? error : new GeminiError('Não foi possível ativar a janela Gemini selecionada.');
+  }
+  return { call, evaluate, profile: selected.profile, close: () => { try { socket.close(); } catch {} } };
 }
 
 const snapshot = `(() => {
@@ -117,7 +131,7 @@ export async function askGemini(message, { timeoutMs = 60000 } = {}) {
       if (current.responses <= before.responses || !current.last) continue;
       if (current.last !== seen) { seen = current.last; stableSince = Date.now(); }
       if (Date.now() - stableSince >= 2600) {
-        return { reply: current.last, url: current.url, source: 'gemini-browser' };
+        return { reply: current.last, url: current.url, source: 'gemini-browser', profile: client.profile };
       }
     }
     const finalState = await client.evaluate(snapshot).catch(() => null);

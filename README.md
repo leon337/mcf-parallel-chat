@@ -1,4 +1,6 @@
-# MCF Parallel Chat — MVP 0.2
+# MCF Parallel Chat — MVP 0.2.1
+
+A v0.2.1 corrige múltiplas páginas Gemini no Cockpit: seleciona deterministicamente a única sessão com perfil numerado (`/u/N/app`) quando existir junto da página genérica, ativa a janela selecionada pelo Chromium (`Page.bringToFront`) antes da digitação e não envia nada caso várias contas distintas tornem a escolha ambígua. A variável opcional `MCF_GEMINI_PROFILE` permite selecionar `default` ou um índice numérico quando necessário. O endpoint `/api/status` informa `geminiProfile` e só apresenta Gemini disponível quando uma sessão válida é selecionável.
 
 **Repositório privado:** https://github.com/leon337/mcf-parallel-chat
 
