@@ -102,6 +102,10 @@ export async function askGemini(message, { timeoutMs = 60000 } = {}) {
         return { reply: current.last, url: current.url, source: 'gemini-browser' };
       }
     }
+    const finalState = await client.evaluate(snapshot).catch(() => null);
+    if (finalState?.draft === message.trim() && finalState.users === before.users) {
+      throw new GeminiError('Envio não confirmado: o rascunho continua no Gemini. Verifique o botão após redimensionar a janela.');
+    }
     throw new GeminiError('O Gemini não concluiu a resposta dentro do limite. Confira a conversa no Cockpit.');
   } finally {
     client?.close();
