@@ -3,7 +3,8 @@ import fs from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { localReply } from './local-engine.mjs';
-import { askGemini } from './gemini-client.mjs';
+import { askGemini, GeminiError } from './gemini-client.mjs';
+import { envelope, logEvent, readEvents, validUuid, uuid } from './trace-ledger.mjs';
 
 const dir = dirname(fileURLToPath(import.meta.url));
 const host = '127.0.0.1';
@@ -40,7 +41,17 @@ async function bodyJSON(req) {
   if (!body || typeof body.message !== 'string' || !body.message.trim() || body.message.length > 2000) {
     throw Object.assign(new Error('Mensagem deve ter 1–2000 caracteres.'), {status:400});
   }
-  return body.message.trim();
+  for (const key of ['trace_id','turn_id','message_id']) {
+    if (body[key] !== undefined && !validUuid(body[key])) {
+      throw Object.assign(new Error('Identificador de correlação inválido: ' + key), {status:400});
+    }
+  }
+  return {
+    message: body.message.trim(),
+    trace_id: body.trace_id || uuid(),
+    turn_id: body.turn_id || uuid(),
+    message_id: body.message_id || uuid(),
+  };
 }
 
 const server = http.createServer(async (req,res) => {
@@ -60,15 +71,30 @@ const server = http.createServer(async (req,res) => {
       } catch {}
       return send(res,200,{ok:true,service:'mcf-parallel-chat',local:'disponivel',gemini});
     }
+    if (req.method === 'GET' && url.pathname === '/api/traces') {
+      return send(res, 200, {ok:true,events:await readEvents(30)});
+    }
     if (req.method === 'POST' && (url.pathname === '/api/local' || url.pathname === '/api/gemini')) {
       if (!/^application\/json(?:\s*;|$)/i.test(req.headers['content-type']||'')) {
         return send(res,415,{error:'Content-Type application/json obrigatório.'});
       }
-      const message = await bodyJSON(req);
-      if (url.pathname === '/api/local') return send(res,200,{ok:true,...localReply(message)});
-      const start=Date.now();
-      const result=await askGemini(message);
-      return send(res,200,{ok:true,...result,latencyMs:Date.now()-start});
+      const context = await bodyJSON(req);
+      const provider = url.pathname === '/api/local' ? 'local' : 'gemini';
+      const begin = Date.now();
+      try {
+        const result = provider === 'local' ? localReply(context.message) : await askGemini(context.message);
+        const elapsed = Date.now() - begin;
+        const attribution = envelope(provider,context,'completed',elapsed);
+        await logEvent(attribution);
+        return send(res,200,{ok:true,...result,attribution,latencyMs:elapsed});
+      } catch (error) {
+        const attribution = envelope(provider,context,'error',Date.now()-begin);
+        await logEvent(attribution);
+        if (error instanceof GeminiError) {
+          return send(res,503,{ok:false,error:error.message,attribution});
+        }
+        throw error;
+      }
     }
     if (req.method === 'GET' && assets[url.pathname]) {
       const [file,mime]=assets[url.pathname];

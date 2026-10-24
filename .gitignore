@@ -7,3 +7,4 @@ coverage/
 
 .mcf-data/
 *conversation-export*.json
+mcf-parallel-chat-*.json

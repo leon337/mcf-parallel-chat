@@ -1,4 +1,8 @@
-# MCF Parallel Chat — MVP 0.1
+# MCF Parallel Chat — MVP 0.2
+
+**Repositório privado:** https://github.com/leon337/mcf-parallel-chat
+
+A v0.2 adiciona envelopes de proveniência com IDs correlacionados entre frontend e backend, registro local somente de metadados em `.mcf-data/events.jsonl`, exportação explícita do histórico e diagnóstico aprimorado para envio ao Gemini quando a janela muda de tamanho. São identificações técnicas, **não assinaturas criptográficas**. O motor local continua sendo um mecanismo determinístico, não GPT-6.
 
 Chatbot experimental executado localmente com duas respostas independentes:
 
@@ -26,7 +30,7 @@ Requisitos: Node.js 22.12+; Dual Browser Cockpit com Gemini autenticado e depura
 
 ## Funcionalidades
 
-- Chat com histórico apenas na memória da aba, sem armazenamento persistente;
+- Chat com histórico em memória na aba e **exportação JSON sob comando do usuário**; observabilidade persistente grava apenas metadados, sem prompts;
 - Solicitações simultâneas com `Promise.allSettled` no navegador;
 - Tempo de resposta, identificação da origem e falhas independentes;
 - Limite de 2000 caracteres por prompt, rejeição de requisições grandes;

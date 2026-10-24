@@ -1,7 +1,12 @@
 // Gemini browser adapter for MCF Parallel Chat.
 // Uses only the existing local Chromium debugging endpoint. No API keys.
 const DEBUG_BASE = process.env.MCF_GEMINI_DEBUG_URL || 'http://127.0.0.1:9334';
-export class GeminiError extends Error {}
+export class GeminiError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'GeminiError';
+  }
+}
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 let active = false;
 
@@ -90,6 +95,19 @@ export async function askGemini(message, { timeoutMs = 60000 } = {}) {
     await client.call('Input.dispatchMouseEvent', { type: 'mouseMoved', x, y });
     await client.call('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', clickCount: 1 });
     await client.call('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', clickCount: 1 });
+    // Revalidate after resize. Retry ONLY while the complete original draft is
+    // still present and Gemini has not accepted a new user message.
+    await sleep(1600);
+    const checked = await client.evaluate(snapshot);
+    if (checked.users === before.users && checked.draft === message.trim()) {
+      const clicked = await client.evaluate(`(() => {
+        const e = document.querySelector('[role="textbox"][contenteditable="true"]');
+        const b = [...document.querySelectorAll('button')].find(x => /^(Enviar mensagem|Send message)$/i.test(x.getAttribute('aria-label') || ''));
+        if (!e || e.innerText.trim() !== ${JSON.stringify(message.trim())} || !b || b.disabled) return false;
+        b.click(); return true;
+      })()`);
+      if (!clicked) throw new GeminiError('Não foi possível confirmar o envio após o redimensionamento.');
+    }
     let seen = '', stableSince = 0;
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {

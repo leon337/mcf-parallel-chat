@@ -12,6 +12,13 @@ function provenance(parent, actorId, role, provider, turnId, messageId = crypto.
   parent.append(node);
   return { schema:'mcf-attribution-v1',trace_id:sessionId,session_id:sessionId,turn_id:turnId,message_id:messageId,actor_id:actorId,role,provider,timestamp:stamp,signature_type:'attribution-only' };
 }
+function showAttribution(card, metadata) {
+  if (!metadata) return;
+  const node = card.querySelector('.message-provenance');
+  if (!node) return;
+  node.textContent = `[${metadata.actor_id}] ${metadata.role} · ${metadata.provider} · trace:${metadata.trace_id.slice(0,8)} · msg:${metadata.message_id.slice(0,8)} · ${metadata.status}`;
+  node.title = JSON.stringify(metadata);
+}
 function el(tag, cls, text) {
   const node = document.createElement(tag);
   if (cls) node.className = cls;
@@ -68,32 +75,41 @@ function createTurn(message) {
   history.scrollTop=history.scrollHeight;
   return cards;
 }
-async function callEngine(path, message) {
+async function callEngine(path, message, context) {
   const response = await fetch(path,{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({message}),
+    body:JSON.stringify({message,trace_id:context.trace_id,turn_id:context.turn_id,message_id:context.message_id}),
   });
   const data = await response.json();
-  if (!response.ok || !data.ok) throw new Error(data.error || 'Falha no motor.');
+  if (!response.ok || !data.ok) {
+    const error = new Error(data.error || 'Falha no motor.');
+    error.attribution = data.attribution;
+    throw error;
+  }
   return data;
 }
 async function deliver(engine, endpoint, message, statusId) {
   updateStatus(statusId,'Respondendo','working');
   const begin = performance.now();
   try {
-    const result=await callEngine(endpoint,message);
+    const result=await callEngine(endpoint,message,engine.record.messages[0]);
     engine.content.textContent=result.reply;
     const elapsed = result.latencyMs ?? Math.round(performance.now()-begin);
     engine.status.textContent=elapsed+' ms';
-    engine.record.messages.push({...engine.entry,status:'completed',latency_ms:elapsed,text:result.reply});
+    const signed = result.attribution || engine.entry;
+    showAttribution(engine.card, signed);
+    engine.record.messages.push({...signed,status:'completed',latency_ms:elapsed,text:result.reply});
     updateStatus(statusId,'Pronto');
+    if (statusId === '#geminiStatus') $('#connectionText').textContent='Gemini: última resposta confirmada';
     return result;
   } catch(err) {
     const error=err?.message || 'erro desconhecido';
     engine.content.textContent='Não foi possível concluir: '+error;
     engine.status.textContent='Falha';
-    engine.record.messages.push({...engine.entry,status:'error',latency_ms:Math.round(performance.now()-begin),error});
+    showAttribution(engine.card,err?.attribution);
+    engine.record.messages.push({...((err?.attribution) || engine.entry),status:'error',latency_ms:Math.round(performance.now()-begin),error});
     updateStatus(statusId,'Falha','error');
+    if (statusId === '#geminiStatus') $('#connectionText').textContent='Gemini: falha na última operação';
     return null;
   }
 }

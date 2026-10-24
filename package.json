@@ -1,13 +1,13 @@
 {
   "name": "mcf-parallel-chat",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Chatbot de dois fluxos em paralelo: motor local transparente e Gemini pelo navegador do MCF Cockpit.",
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test test/*.test.mjs",
-    "check": "node --check server.mjs && node --check gemini-client.mjs && node --check local-engine.mjs && node --check public/app.js",
+    "check": "node --check server.mjs && node --check gemini-client.mjs && node --check local-engine.mjs && node --check trace-ledger.mjs && node --check public/app.js",
     "test:live": "node test/live-parallel.mjs",
     "test:browser": "node test/browser-e2e.mjs"
   },

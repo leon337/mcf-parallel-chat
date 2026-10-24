@@ -34,9 +34,9 @@ Atribuição visual não equivale a verificação de assinatura digital. Para mu
 
 ## Publicação GitHub
 
-O repositório local já está inicializado. **O remoto ainda precisa ser criado e o primeiro push confirmado.** A operação automatizada de criação foi impedida por uma proteção de segurança da ferramenta.
+**Publicado:** repositório privado `leon337/mcf-parallel-chat`, branch `main`. A criação e o primeiro push foram executados e validados. O push do código subsequente deve ser verificado pelo commit remoto.
 
-Na máquina autorizada, o responsável humano pode concluir localmente:
+Para manutenção futura no notebook autenticado, o executor autorizado pode inspecionar o remoto com `git remote -v` e publicar novas alterações com `git push origin main`. O trecho histórico abaixo documenta a criação inicial já concluída:
 
 ```bash
 cd /home/leo/agent-sandbox/projects/mcf-parallel-chat
