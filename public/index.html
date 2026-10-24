@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0c1017" />
+  <title>MCF Parallel Chat — MESTRE × Gemini</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="monogram">M</div>
+      <div><strong>MCF PARALLEL</strong><span>CHAT LABORATORY / 01</span></div>
+    </div>
+    <div class="sidebar-caption">EXPERIMENTO ATIVO</div>
+    <div class="sidebar-menu">
+      <div class="nav-item active"><span class="nav-icon">◈</span> Arena de respostas <span class="nav-dot"></span></div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-note"><span class="tiny-mark">◎</span> Ambiente local e isolado</div>
+      <div class="sidebar-note"><span class="tiny-mark">↗</span> Gemini via navegador autenticado</div>
+      <div class="sidebar-note"><span class="tiny-mark">◇</span> Sem API de IA paga</div>
+      <div class="sidebar-divider"></div>
+      <p>PROTÓTIPO • MVP 0.1</p>
+      <p>O motor local utiliza regras explícitas. O Gemini utiliza IA generativa.</p>
+    </div>
+  </aside>
+  <main class="main">
+    <header class="topbar">
+      <div class="crumbs">LAB / <strong>Parallel Chat</strong></div>
+      <div class="top-right"><span class="live-dot"></span><span id="connectionText">Verificando agentes...</span></div>
+    </header>
+    <section class="content">
+      <div class="intro">
+        <div class="eyebrow"><span class="cross">✳</span> MULTI-ENGINE EXPERIMENT <span class="line"></span> 2026</div>
+        <h1>Uma pergunta.<br/><em>Duas perspectivas.</em></h1>
+        <p>Envie uma mensagem para o motor local e o Gemini em paralelo. Compare respostas, tempo de execução e comportamento sem depender de APIs pagas.</p>
+      </div>
+      <div class="engine-grid">
+        <article class="engine-card">
+          <div class="engine-left"><span class="engine-symbol local">⌘</span><div><b>Motor local</b><small>RULE-BASED • NODE.JS</small></div></div>
+          <span class="indicator" id="localStatus">Pronto</span>
+        </article>
+        <article class="engine-card">
+          <div class="engine-left"><span class="engine-symbol gemini">✦</span><div><b>Google Gemini</b><small>AI MODEL • COCKPIT BROWSER</small></div></div>
+          <span class="indicator" id="geminiStatus">Verificando</span>
+        </article>
+      </div>
+      <section class="arena" aria-live="polite">
+        <div class="arena-head"><span>HISTÓRICO DA SESSÃO</span><button id="clearButton" class="text-button" type="button">Limpar tela <span>↗</span></button></div>
+        <div id="history" class="history">
+          <div class="empty" id="emptyState">
+            <div class="empty-symbol">◉</div>
+            <strong>O laboratório está pronto.</strong>
+            <span>Experimente uma pergunta sobre software, IA ou segurança.</span>
+            <div class="chips">
+              <button type="button" data-example="Como criar um chatbot seguro?">Chatbot seguro ↗</button>
+              <button type="button" data-example="Explique a arquitetura de um MVP de IA">Arquitetura MVP ↗</button>
+              <button type="button" data-example="Quais testes devo executar?">Plano de testes ↗</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <form id="chatForm" class="composer">
+        <div class="composer-eyebrow"><span class="pulse"></span> PROMPT COMPARTILHADO <span class="limit" id="count">0 / 2000</span></div>
+        <textarea id="message" rows="3" maxlength="2000" required placeholder="O que você quer explorar com os dois motores?" aria-label="Sua mensagem"></textarea>
+        <div class="composer-bottom">
+          <span><b>↵</b> Enter para enviar · Shift+Enter para nova linha</span>
+          <button id="sendButton" class="send-button" type="submit">Executar em paralelo <span>↗</span></button>
+        </div>
+      </form>
+      <div class="privacy">● As mensagens enviadas são processadas localmente e também encaminhadas à sessão Gemini aberta no Cockpit. Não compartilhe segredos, tokens ou dados sensíveis.</div>
+    </section>
+  </main>
+</div>
+</body>
+</html>
