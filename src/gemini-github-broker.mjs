@@ -146,6 +146,13 @@ async function inspect(manifest, api) {
         (branch.object?.sha !== manifest.base_sha && !existing))
       throw new Error('BRANCH_CONFLICT: branch contains unexpected changes');
   }
+  // Reject an already-open non-draft PR BEFORE any write.
+  const prs = await api('GET', prefix + '/pulls?state=open&head=leon337%3A' +
+    encodeURIComponent(manifest.branch) + '&base=main');
+  if (!Array.isArray(prs)) throw new Error('GitHub PR lookup response invalid');
+  const openPr = prs.find((item) => item.head?.ref === manifest.branch);
+  if (openPr && !openPr.draft)
+    throw new Error('NON_DRAFT_PR: branch is already under active review');
   return { live_base_sha: liveBase, branch_exists: Boolean(branch), file_exists: Boolean(existing) };
 }
 

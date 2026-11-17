@@ -182,3 +182,13 @@ test('rejects an existing file with differing content', async () => {
     /CONFLICT/
   );
 });
+
+test('rejects non-draft review before mutating GitHub', async () => {
+  const f = fakeGithub();
+  f.prs.push({ number: 8, state: 'open', draft: false, head: { ref: BRANCH } });
+  await assert.rejects(
+    applyHandoff(valid(), proposalDigest(valid()), f.gh),
+    /NON_DRAFT_PR/
+  );
+  assert.equal(f.calls.some((c) => c.method !== 'GET'), false);
+});
